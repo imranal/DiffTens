@@ -18,9 +18,9 @@ def find_eigen(T):
     else:
         return eig_values,v1,v2
 
-from scipy.interpolate import griddata
 def integrate(grid_points,U,p0,s,direction='major',solver=None):
     dim = 2
+    from scipy.interpolate import griddata
     if len(U) == 12:
         dim = 3
         U_x, U_y, U_z, U_x_, U_y_, U_z_, U_x__, U_y__, U_z__,l_minor, l_major, l_medium = U
@@ -73,18 +73,25 @@ def integrate(grid_points,U,p0,s,direction='major',solver=None):
 
 def _expand_hyperstreamline(p,Ux,Uy,l,points):
     p_ = np.zeros_like(p)
+    Ux_ = Ux.flatten()
+    Uy_ = Uy.flatten()
+    from scipy.interpolate import griddata
     def f(x):
-        return [griddata(points,Ux,x)[0], griddata(points,Uy,x)[0]]
+        return [griddata(points,Ux_,x)[0], griddata(points,Uy_,x)[0]]
     i = 0    
     for p_val in p:
-        print p_val
-        p_[i] = f(p_val)*l[p_val]
+        p_[i] = [f(p_val)[0]*p_val[0],f(p_val)[1]*p_val[1]]
         i = i + 1
-    return p_
-    
+    return p_   
 
 def _expand_hyperstreamline3D(p,Ux,Uy,Uz,Ux_,Uy_,Uz_,l,l_,points):
     p_ = np.zeros_like(p)
+    Uxx = Ux.flatten()
+    Uyy = Uy.flatten()
+    Uzz = Uz.flatten()
+    Uxx_ = Ux_.flatten()
+    Uyy_ = Uy_.flatten()
+    Uzz_ = Uz_.flatten()
     def f1(x):
         return [griddata(points,Ux,x)[0], griddata(points,Uy,x)[0],griddata(points,Uz,x)[0]]
     def f2(x):
@@ -278,28 +285,59 @@ def _run_example_3D(xstart,xend,N,direction='major',solver=None):
     p,p_ = integrate([x,y,z],U,INITIAL_POINT,t,direction=direction,solver=solver)
     return p,p_
 
+def _run_example_degenerate_tensor1(xstart,xend,N,direction='major',solver=None):
+    x0,y0 = xstart
+    xN,yN = xend
+    Nx,Ny = N
+    x,y = np.mgrid[x0:xN:Nx*1j,y0:yN:Ny*1j]
+    import degeneracies as dg
+    T1 = dg.T1
+    T = T1(x,y)
+    eig_field = np.zeros([3,2,Nx,Ny],dtype=np.float32)
+
+    print "Determining eigenvectors for the flat metric of a sphere over the mesh..."
+    for i in range(Nx):
+        for j in range(Ny):
+            eig_field[:,:,i,j] = find_eigen(T[:,:,i,j])
+    
+    INITIAL_POINT = (0,0)
+    t0 = 0
+    t1 = 2
+    dt = 0.01  
+    t = np.arange(t0,t1+dt,dt)   
+    U = extract_eigen(eig_field)
+    p,p_ = integrate([x,y],U,INITIAL_POINT,t,direction=direction,solver=solver)
+    return p,p_
+
 if __name__ == "__main__":
     import sys
-    x0 = 0; y0 = 0; z0 = 0
-    xN = np.pi/2; yN = np.pi; zN = 1
-    Nx = 22; Ny = 22; Nz = 22
-    N = (Nx,Ny,Nz)#N = (Nx,Ny)
-    xstart = (x0,y0,z0); xend = (xN,yN,zN) 
-    #xstart = (x0,y0); xend = (xN,yN) 
+    x0 = -2; y0 = -2; #z0 = 0
+    xN = 2; yN = 2; #zN = 1
+    Nx = 20; Ny = 20; #Nz = 22
+    #N = (Nx,Ny,Nz)
+    N = (Nx,Ny)
+    #xstart = (x0,y0,z0); xend = (xN,yN,zN) 
+    xstart = (x0,y0); xend = (xN,yN) 
     solver = None # solvers: lsoda (default), vode,zvode,lsoda,dopri5,dop853
    
     if len(sys.argv) > 1:
         if sys.argv[1] == "major":
-            p,p_= _run_example_flat_sphere(xstart,xend,N,'major',solver=solver)
+            #p,p_= _run_example_flat_sphere(xstart,xend,N,'major',solver=solver)
+            p,p_= _run_example_degenerate_tensor1(xstart,xend,N,'major',solver=solver)
         else:
-            p,p_= _run_example_flat_sphere(xstart,xend,N,'minor',solver=solver)
+            #p,p_= _run_example_flat_sphere(xstart,xend,N,'minor',solver=solver)
+            p,p_= _run_example_degenerate_tensor1(xstart,xend,N,'minor',solver=solver)
     else:
         #p,p_= _run_example_flat_sphere(xstart,xend,N,'major',solver=solver)
-        p,p_= _run_example_3D(xstart,xend,N,'major',solver=solver)
+        #p,p_= _run_example_3D(xstart,xend,N,'major',solver=solver)
+        p,p_= _run_example_degenerate_tensor1(xstart,xend,N,'major',solver=solver)
     
     import matplotlib.pylab as plt
     from mpl_toolkits.mplot3d import Axes3D
     fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')    
-    plt.plot(p[:,0],p[:,1],p[:,2])
+    #ax = fig.add_subplot(111, projection='3d')    
+    #plt.plot(p[:,0],p[:,1],p[:,2])
+    plt.plot(p,'b')
+    plt.hold('on')
+    plt.plot(p_,'r')    
     plt.show()

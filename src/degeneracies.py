@@ -1,29 +1,19 @@
 import numpy as np
 
-def T1(x_):
-    x = x_[0]
-    y = x_[1]
+def T1(x,y):
     return np.array([[.5*x**2 + 2*x*y + .5*y**2,              -x**2 + y**2],
                      [             -x**2 + y**2, -.5*x**2 - 2*x*y - 5*y**2]])
-def T2(x_):
-    x = x_[0]
-    y = x_[1]
+def T2(x,y):
     return np.array([[x**2 - y**2, 2*x*y],
                      [2*x*y, x**2 - y**2]])
-def T3(x_):
-    x = x_[0]
-    y = x_[1]
+def T3(x,y):
     return np.array([[x**2 - 3*y**2, -5*x*y + 4*y**2],
                      [-5*x*y + 4*y**2, x**2 - 3*y**2]])
-def T4(x_):
-    x = x_[0]
-    y = x_[1]
+def T4(x,y):
     return np.array([[x**4 - .5*x**2*y**2, 2*x**4 - 5*x**3*y - 9*x*y**3],
                      [2*x**4 - 5*x**3*y - 9*x*y**3, x**4 - .5*x**2*y**2]])
 
-def T5(x_):
-    x = x_[0]
-    y = x_[1]
+def T5(x,y):
     return np.array([[-x**2 + y**2, -x**2 - 2*x*y + y**2],
                      [-x**2 - 2*x*y + y**2, -x**2 + y**2]])
 
